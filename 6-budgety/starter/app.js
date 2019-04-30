@@ -1,6 +1,7 @@
 // BUDGET CONTROLLER
 var budgetController = (function() {
 
+    const abc = 2;
     var Expense = function(id, description, value) {
         this.id = id;
         this.description = description;
@@ -9,8 +10,16 @@ var budgetController = (function() {
 
     var Income = function(id, description, value) {
         this.id = id;
-        this.descriptioj = description;
+        this.description = description;
         this.value = value;
+    };
+
+    var calculateTotal = function(type) {
+        var sum = 0;
+        data.allItems[type].forEach(function(cur) {
+            sum = sum + cur.value;
+        });
+        data.totals[type] = sum;
     };
 
 
@@ -19,10 +28,12 @@ var budgetController = (function() {
             exp: [],
             inc: []
         },
-        total: {
+        totals: {
             exp: 0,
             inc: 0
-        }
+        },
+        budget:0,
+        percentage: -1
     };
 
     return {
@@ -54,10 +65,41 @@ var budgetController = (function() {
             // Return the new element.
             return newItem;
         },
+
+        calculateBudget: function() {
+
+            // Calculate total income and expenses
+            calculateTotal('exp');
+            calculateTotal('inc');
+
+            // Calculate the budget: income - expense
+            data.budget = data.totals.inc - data.totals.exp;
+
+            // Calculate the percentage of income that we spent
+            if (data.totals.inc > 0) {
+                data.percentage = Math.round((data.totals.exp /data.totals.inc) * 100);
+            }
+
+
+            // Expense = 100 and income 200, spent 50% = 100/200 = 0.5 * 100
+
+
+        },
+
+        getBudget: function() {
+            return {
+                budget: data.budget,
+                totalInc: data.totals.inc,
+                totalExp: data.totals.exp,
+                percentage: data.percentage
+            }
+        },
         
         testing: function() {
             console.log(data);
         }
+
+    
     }
 
 
@@ -72,7 +114,11 @@ var UIController = (function() {
         inputValue: '.add__value',
         inputBtn: '.add__btn',
         incomeContainer: '.income__list',
-        expensesContainer: '.expenses__list'
+        expensesContainer: '.expenses__list',
+        budgetLabel: '.budget__value',
+        incomeLabel: '.budget__income--value',
+        expensesLabel: '.budget__expenses--value',
+        percentageLabel: '.budget__expenses--percentage'
         
     }
 
@@ -135,6 +181,21 @@ var UIController = (function() {
             fieldsArr[0].focus();
         },
 
+        displayBudget: function(obj) {
+            document.querySelector(DOMStrings.budgetLabel).textContent = obj.budget;
+            document.querySelector(DOMStrings.incomeLabel).textContent = obj.totalInc;
+            document.querySelector(DOMStrings.expensesLabel).textContent = obj.totalExp;
+            document.querySelector(DOMStrings.percentageLabel).textContent = obj.percentage;
+
+            if (obj.percentage > 0) {
+                document.querySelector(DOMStrings.percentageLagel).textContent = obj.percentage + '%';
+
+            }else {
+                document.querySelector(DOMStrings.percentageLabel).textContent = '---';
+            }
+            
+        },
+
         getDOMStrings: function() {
             return DOMStrings;
         }
@@ -163,10 +224,15 @@ var controller = (function(budgetCtrl, UICtrl) {
     var updateBudget = function() {
 
         // 1. Calculate the budget
+        budgetCtrl.calculateBudget();
 
         // 2. Return the budget
+        var budget = budgetCtrl.getBudget();
 
         // 3. Display the budget on the UI
+        UICtrl.displayBudget(budget);
+
+        
 
 
     }
@@ -202,6 +268,12 @@ var controller = (function(budgetCtrl, UICtrl) {
     return {
         init: function() {
             console.log("init");
+            UICtrl.displayBudget({
+                budget: 0,
+                totalInc: 0,
+                totalExp: 0,
+                percentage: -1
+            })
             setupEventListeners();
         }
     }
